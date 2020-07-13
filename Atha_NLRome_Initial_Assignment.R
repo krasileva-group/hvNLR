@@ -22,8 +22,10 @@
 ##   fill in clades for tips that were missed due to size gate
 ##   check that each tip is uniquely assigned to a clade
 ##   output lists of genes for each clade
+##   Last Tested on R version 3.6.3
 ## ---------------------------
 # sessionInfo()
+
 ## Install packages. This needs to be done once for each R version.
 # if (!requireNamespace("BiocManager", quietly = TRUE))
 #   install.packages("BiocManager")
