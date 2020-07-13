@@ -13,7 +13,7 @@
 ##
 ## ---------------------------
 ##
-## Notes:
+## Notes: Last tested under R version 3.6.3
 ##   
 ##
 ## ---------------------------
@@ -23,28 +23,19 @@
 setwd(dir = "~/BioInf/ArabidopsisRENSEQ/Phylogeny/Autoclades_70/")
 # 
 # #Installing Packages for alignment manipulation-----------
-# install.packages("seqinr")
-# install.packages("rowr")
- install.packages("tidyverse")
+# install.packages("entropy")
+# install.packages("tidyverse")
 # source("http://bioconductor.org/biocLite.R")
 # if (!requireNamespace("BiocManager"))
 #   install.packages("BiocManager")
 # BiocManager::install("msa")
 # BiocManager::install("odseq")
-# install.packages("htmlwidgets")
-# install.packages("rowr")
-# install.packages("fractal")
 
 #Loading libraries-----------------------------------------
-#library(reshape2)
-#library(seqinr)
 library(msa)
 library(entropy)
 library(odseq)
 library(tidyverse)
-library(tidyselect)
-#library(ggplot2)
-#library(stringr)
 
 #Get list of genes to produce Entropy plots for-------
 getwd()
@@ -147,7 +138,7 @@ for (j in seq_along(genes$Gene)) {
 
 ##Import LRR Annotation
 LRR_Annotation <- read_delim(file = "GeneAnalysisHV/SnapGene/All_features.tsv", col_names = F,delim = "\t")
-LRR_Annotation <- read_delim(file = "~/Box/NLR_binding_site_prediction/figures/Figure_4/ZAR1.FeatureList.txt", col_names = F,delim = "\t")
+# LRR_Annotation <- read_delim(file = "~/Box/NLR_binding_site_prediction/figures/Figure_4/ZAR1.FeatureList.txt", col_names = F,delim = "\t")
 colnames(LRR_Annotation) <- c("Gene", "Motiff", "Start", "Stop", "Length")
 LRR_Annotation %>% filter(Motiff == "NB-ARC")
 LRR_Annotation %>% print(n=600)
@@ -159,10 +150,10 @@ for (i in 1:length(LRR_Annotation$Gene)){
   RepNum <- append(RepNum, base::strsplit(as.character(LRR_Annotation$Motiff[i]),split = "LRR",fixed = T)[[1]][2], length(RepNum))
 }
 RepNum <-as.integer(RepNum)
-LRR_Annotation <- cbind(LRR_Annotation,RepNum) %>% as_tibble()
+LRR_Annotation <- mutate(LRR_Annotation,RepNum = RepNum)
 LRR_Annotation %>% mutate(Gene = paste0("Athaliana_",Gene)) -> LRR_Annotation
 LRR_Annotation
-max(LRR_Annotation$RepNum, na.rm = T)
+max(LRR_Annotation$RepNum, na.rm = T) # the greatest number of repeats is 26
 
 #Get the associated clades and alignment files from Atha_NLRome_CladeAnalysis.R output i.e. the main tibble called Common-----
 (genes<-read_delim("AthaHV.txt",col_names = c("Gene","CommonName"),delim = "\t" ))
@@ -175,7 +166,7 @@ max(LRR_Annotation$RepNum, na.rm = T)
 Alph_21 <- c("A","R","N","D","C","Q","E","G","H","I","L","K","M","F","P","S","T","W","Y","V","-")
 Alph_20 <- c("A","R","N","D","C","Q","E","G","H","I","L","K","M","F","P","S","T","W","Y","V")
 Hydrophob <- c("A","I","L","M","F","P","W","Y","V")
-genes <- tibble(Gene = "Athaliana_AT3G50950.1", CommonName = "ZAR")
+# genes <- tibble(Gene = "Athaliana_AT3G50950.1", CommonName = "ZAR1")
 
 All_LRR_Entropy <- vector("list", length = nrow(genes))
 All_LRR_Hydrophob <-vector("list", length = nrow(genes))
@@ -264,11 +255,8 @@ for(jj in seq_along(All_LRR_Entropy)){Entropy<-rbind(Entropy,All_LRR_Entropy[[jj
 colnames(Entropy) <- c("Gene","LRR","Start","Pm5","Pm4","Pm3","Pm2","Pm1","P1","P2","P3","P4","P5","P6","P7","P8","P9","P10","P11","P12","P13")
 Entropy
 
-write_delim(Entropy,"Entropy_LRR.txt",delim = "\t")
-write_delim(Hphob,"Hphob_LRR.txt",delim = "\t")
-write_delim(AAlist,"ZAR1.AAlist.txt",delim = "\t")
-
-
-
-
-
+#######################################
+## Export resulting tables------------
+# write_delim(Entropy,"Entropy_LRR.txt",delim = "\t")
+# write_delim(Hphob,"Hphob_LRR.txt",delim = "\t")
+# write_delim(AAlist,"ZAR1.AAlist.txt",delim = "\t")
