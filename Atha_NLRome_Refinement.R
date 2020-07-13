@@ -15,7 +15,16 @@
 ##
 ## Notes: This is a script where variable parameters are set on top including input/output directories. 
 ##        This allows the same script to be used in successive refinements.
-##   
+##        Refinement relies on deciding which clades need to be evaulated in iTOL 
+##          - 90% invariant residues ignoring gaps is the cutoff point
+##          - for the clades below cutoff, the decision to cut is made based on presence of long branches in the tree with strong support
+##            and with ecotype overlap 
+##          - after a list of branches to cut is compiled, subclade assignment is done by traversing 
+##            clade tree from each tip until a cut branch is met
+##          - tip gets assigned a value in the Split_1 column that is the name of the new subclade
+##          - new subclade lists are printed out
+##      
+##        Last tested under R version 3.6.3
 ##
 ## ---------------------------
 ##Installing Packages for alignment manipulation-----------
@@ -26,6 +35,7 @@
 # BiocManager::install("msa")
 # BiocManager::install("odseq")
 # BiocManager::install("ggtree")
+# BiocManager::install("treeio")
 
 #Loading libraries-----------------------------------------
 library("tidyverse")
@@ -75,7 +85,7 @@ OutputDirectory <- "../Autoclades_70_Refinement_1/"
 # hvSiteEntCutoff <-  1.5
 # OutputDirectory <- "../Autoclades_70_Refinement_4/"
 ##########################################
-
+getwd()
 if (!dir.exists(OutputDirectory)){dir.create(OutputDirectory)}
 
 ##Collect subdirectories and aligment files ending in *.best.fa
@@ -96,7 +106,7 @@ for (i in seq_along(files)) {
   
   ## Extracting folder name
   folder <- str_split(files[[i]], "/")[[1]][1]
-  
+  print(paste0("Looking at alignment ",folder))  
   ## Filter out gappy columns
   if (MinGapFraction <1){autoMasked <- maskGaps(maa, min.fraction = MinGapFraction, min.block.width = MinGapBlockWidth) ##KEY FILTERING PARAMETERS
   MinAli <- as(autoMasked, "AAStringSet")}else{MinAli<-as(maa, "AAStringSet")}
@@ -144,7 +154,7 @@ stats<-mutate(stats, Clade = Clade,
                Ali_Length = as.numeric(Ali_Length)
                )
 stats %>% arrange(FractionZeroNG) %>% print(n=500)
-write_delim(stats, path = paste0(OutputDirectory,"/Stats.txt"), delim = "\t", col_names = T)
+# write_delim(stats, path = paste0(OutputDirectory,"/Stats.txt"), delim = "\t", col_names = T)
 
 
 ##Plot distributions of invariant sites with/without gaps and of highly variable sites---------
@@ -189,7 +199,7 @@ for (l in seq_along(Entropy)){
 }
 
 ########################################
-###Analyse clade trees------------------
+###Analyze clade trees------------------
 ###Import trees, calculate tree statistics, store all trees in BigTable object
 '%ni%' <- Negate('%in%')
 trees <- list.files(path = dirs,pattern = "RAxML_bipartitionsBranchLabels.*.First.out$", recursive = F, full.names = TRUE)
@@ -269,14 +279,14 @@ Cut_Nodes_10 <- rbind(Cut_Nodes_10,a)
 Cut_Nodes_10 <- Cut_Nodes_10 %>% filter(Clade != "Int8392_60")
 
 ## Import prior cut list table
-Cut_Nodes_10<-read_delim("CutList_Refinement_1.txt",delim = " ",col_names = T)
+Cut_Nodes_10<-read_delim("../Autoclades_70_Refinement_1/CutList_Refinement_1.txt",delim = " ",col_names = T)
 Cut_Nodes_10<-read_delim("../Autoclades_70/Refined/CutListSplit2_70.txt",delim = " ",col_names = T)
 Cut_Nodes_10<-read_delim("../Autoclades_70/Refined/Refined2/CutListSplit3_70.txt",delim = " ",col_names = T)
 Cut_Nodes_10 <- Cut_Nodes_10 %>% mutate(label = as.character(label))
 
 
 Cut_Nodes_10<-left_join(Cut_Nodes_10,Full_table)
-Cut_Nodes_10<-left_join(SplitClade,Full_table)
+#Cut_Nodes_10<-left_join(SplitClade,Full_table)
 Cut_Nodes_10 %>% arrange(branch.length) %>% print(n=100)
 ### Write new cut list table. Do Not Use below without redoing subsequent refinements
 # write_delim(Cut_Nodes_10, paste0(OutputDirectory,"/CutList_Refinement_1.txt"),quote_escape = "double")
@@ -342,7 +352,7 @@ CladeStat <- BigTable_1 %>% filter(!is.na(Split_1)) %>% group_by(Clade,Split_1) 
 CladeStat %>% ungroup() %>% select(Clade) %>% distinct()
 CladeStat %>% ungroup() %>% select(Split_1) %>% distinct()
 BigTable  %>% select(label) %>% distinct()
-write_delim(CladeStat, paste0(OutputDirectory,"/CladeStat.txt"), delim = "\t", append = F, col_names = T)
+# write_delim(CladeStat, paste0(OutputDirectory,"/CladeStat.txt"), delim = "\t", append = F, col_names = T)
 
 ggplot(CladeStat,aes(x=n))+geom_density()
 ggplot(CladeStat,aes(x=n))+geom_density()+xlim(0,100)
@@ -372,9 +382,9 @@ BigTable %>% filter(Split_1 =="Int8532_350_354_R", !is.na(label))
 Duplicates
 
 ###Write Clade Lists - DO NOT RUN without repeating refinement
-for (n in 1:(nrow(CladeStat))) {
-  clade <- CladeStat[n,]$Split_1
-  tips <- BigTable_1 %>% filter(Split_1 == clade)
-  tipnames <- tips$label
-  write_delim(x = as.data.frame(tipnames), path = paste0(OutputDirectory,"/",clade, "_",length(tips$label),".txt"), delim = "\t",quote_escape = "double",append = F,col_names = F)
-}
+# for (n in 1:(nrow(CladeStat))) {
+#   clade <- CladeStat[n,]$Split_1
+#   tips <- BigTable_1 %>% filter(Split_1 == clade)
+#   tipnames <- tips$label
+#   write_delim(x = as.data.frame(tipnames), path = paste0(OutputDirectory,"/",clade, "_",length(tips$label),".txt"), delim = "\t",quote_escape = "double",append = F,col_names = F)
+# }

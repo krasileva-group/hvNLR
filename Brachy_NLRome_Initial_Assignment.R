@@ -13,7 +13,7 @@
 ##
 ## ---------------------------
 ##
-## Notes:
+## Notes: Last tested under R version 3.6.3
 ##   
 ##
 ## ---------------------------
@@ -23,7 +23,9 @@
 #  install.packages("BiocManager")
 #BiocManager::install()
 #BiocManager::install("ggtree")
-
+#BiocManager::install("treeio")
+#BiocManager::install("tidytree")
+#install.packages("tidyverse")
 
 library("tidyverse")
 library("ggtree")
@@ -42,7 +44,7 @@ z <- mutate(y, label=if_else(is.na(label),paste0("Int",node),label))
 bs <- z %>% select(label,bootstrap)
 
 ########Export to iTol for rooting---------------
-write.tree(as.phylo(z),"ztree.txt")
+# write.tree(as.phylo(z),"ztree.txt")
 
 ########Import from iTol after rooting---------------
 tree<-read.newick("YPO1up61DFSutQOmDIgGwg_newick.txt")
@@ -51,15 +53,6 @@ x <- left_join(w,bs)
 x
 x %>% filter(label == "Int13000")
 z %>% filter(label == "Int13000")
-
-########Perform Clade analysis---------------
-bootstrap_1 <- x %>% filter(bootstrap > 0) %>% print(n=500)
-bootstrap_90 <- x %>% filter(bootstrap > 89) %>% print(n=500)
-bootstrap_95 <- x %>% filter(bootstrap > 94) %>% print(n=500)
-bootstrap_99 <- x %>% filter(bootstrap > 98) %>% print(n=500)
-bootstrap_99$node
-
-ggplot(bootstrap_1, aes(x=bootstrap))+geom_histogram()+xlim(85,101)
 
 ###Get number of leaves per node------
 N_tips<-vector(length = nrow(x))
@@ -70,6 +63,7 @@ for (i in 1:nrow(x)){
 x <- mutate(x, N_tips = N_tips)
 x
 
+## Find clades that are a good size and have best available support------
 good_size_clades<-vector()
 for (m in tree$tip.label){
   #m <- messy[5,]$node
@@ -100,7 +94,7 @@ offs_pool
 
 partition <- good_size_clades
 partition
-partition <- x[a[which(a %ni% offs_pool)],]
+(partition <- x[a[which(a %ni% offs_pool)],])
 partition %>% select(N_tips) %>% sum()
 x %>% filter(is.na(bootstrap))
 partition %>% arrange(bootstrap) %>% print(n=300)
@@ -150,10 +144,10 @@ ggplot(partition, aes(x=bootstrap))+geom_histogram(binwidth = 1)
 
 
 ###Export text files for every label in partition40 and populate with properly formated gene id's for automatic retreaval---------
-for (n in 1:(nrow(partition))) {
-  clade <- partition[n,]$label
-  node <- partition[n,]$node
-  tips <- offspring(x,node, tiponly = T, self_include = T)
-  tipnames <- unlist(strsplit(tips$label,"/",fixed = T))[2*1:nrow(tips)-1]
-  write_delim(x = as.data.frame(tipnames), path = paste0("./Autoclades_70/",clade, "_",length(tips$label),".txt"), delim = "\t",quote_escape = "double",append = F,col_names = F)
-}
+# for (n in 1:(nrow(partition))) {
+#   clade <- partition[n,]$label
+#   node <- partition[n,]$node
+#   tips <- offspring(x,node, tiponly = T, self_include = T)
+#   tipnames <- unlist(strsplit(tips$label,"/",fixed = T))[2*1:nrow(tips)-1]
+#   write_delim(x = as.data.frame(tipnames), path = paste0("./Autoclades_70/",clade, "_",length(tips$label),".txt"), delim = "\t",quote_escape = "double",append = F,col_names = F)
+# }
