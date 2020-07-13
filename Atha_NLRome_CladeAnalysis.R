@@ -13,12 +13,10 @@
 ##
 ## ---------------------------
 ##
-## Notes:
+## Notes: Last tested under R version 3.6.3
 ##   
 ##
 ## ---------------------------
-## load packages
-
 
 setwd("~/BioInf/ArabidopsisRENSEQ/Phylogeny/Autoclades_70/")
 
@@ -84,7 +82,6 @@ for (l in c(1:nrow(Common))){
   Ecotype<-append(Ecotype, a, after = length(Ecotype))
 }
 (Common<-mutate(Common,Ecotype = as.factor(Ecotype)))
-Common
 
 ###GET allele number##############
 Allele <-vector()
@@ -95,14 +92,6 @@ for (a in Common$Gene){
 (Common <-mutate(Common, Allele = as.integer(Allele)))
 Common %>% filter(Allele !=1) %>%print(n=200)
 Common %>% filter(Allele ==1, Ecotype != "Athaliana") ###Number of unique genes estimated ~7566
-
-# ###Need to import flag for highly variable clades####
-# Visual <- read_tsv("VisualHV.txt", col_names = T)
-# Visual <-Visual[,c(2,3)]
-# Visual
-# Common <- left_join(Common,Visual, by = "Clade")
-# Common
-
 
 ####Get a column of Gene names---------------
 LookUp <-vector()
@@ -115,7 +104,7 @@ for (Tr in Common$Gene){
 }
 colnames(LookUp) <- c("Gene", "Name")
 LookUp <- as_tibble(LookUp)
-Common <- left_join(Common,LookUp, by = "Gene")
+Common <- mutate(Common, Name = LookUp$Name)
 Common %>% select(Name) %>% unique() ##7716 unique genes
 
 #####Find non-unique gene assignments#########
@@ -211,7 +200,7 @@ Pointer <- tibble(Clade = clades, File = files)
 Pointer
 
 Common <- left_join(Common,Pointer, by = "Clade")
-Common %>% filter(is.na(File))%>% select(Clade) %>% unique()
+Common %>% filter(is.na(File))%>% select(Clade) %>% unique() #singleton clades
 
 ### Now it is possible to create a list of genes with entropy strings 
 ### with positions corresponding to the residues of the gene (i.e. remove gaps at the level of the gene)
@@ -277,7 +266,6 @@ for (i in seq_along(files)) {
   EntropyNG[[i]] <- entNG
 }
 
-
 ##Format stats tibble-------
 colnames(stats)<-c("Clade","FractionZero","FractionZeroNG","Ali_Length","N_HV_Sites")
 stats<-as_tibble(stats)
@@ -295,15 +283,17 @@ N_Tips <- Common %>% group_by(Clade)%>%select(Gene)%>%summarise(N=n())
 EcoTibble <- left_join(EcoTibble,N_Tips)
 EcoTibble <- left_join(EcoTibble,stats)
 HV_Clades <- stats %>% filter(N_HV_Sites>9)
+HV_Clades
+
 
 Common %>% filter(Clade %in% HV_Clades$Clade, Allele == 1)%>%group_by(Ecotype)%>%summarise(n=n())%>% print(n=70)->hvFreq
 ggplot(hvFreq,aes(x=n))+geom_histogram()
 Common %>% filter(Clade %in% HV_Clades$Clade, Allele == 1) %>% select(Clade_0) %>% unique() %>% arrange()
 Common %>% select(Clade) %>% unique()
 AthaHV<-Common %>% filter(Clade %in% HV_Clades$Clade, Allele == 1,Ecotype == "Athaliana")%>%select(Gene)%>%unique()%>% arrange(Gene)%>%print(n=50)
-write_delim(AthaHV,"AthaHV.txt", col_names = F, delim = "\t", na = "")
+# write_delim(AthaHV,"AthaHV.txt", col_names = F, delim = "\t", na = "")
 AthaHVPlus<-Common %>% filter(Clade %in% HV_Clades$Clade, Allele != 1,Ecotype == "Athaliana")%>%select(Gene)%>%unique()%>% arrange(Gene)%>%print(n=50)
-write_delim(AthaHVPlus,"AthaHVPlus.txt", col_names = F, delim = "\t", na = "")
+# write_delim(AthaHVPlus,"AthaHVPlus.txt", col_names = F, delim = "\t", na = "")
 
 CommonNames <- read_delim("AthaKnownGenes.txt",delim = "\t", col_names = c("Gene","CommonName"))
 CommonNames %>% print(n=100)
@@ -329,59 +319,6 @@ pivot_wider(CladeEco_long,names_from = Ecotype,values_from = N, values_fill = li
 
 ggplot(CladeEco_Ent,aes(x = Ent))+geom_histogram()
 filter(CladeEco_Ent, Ent ==0)
-write_delim(CladeEco_wide, "CladeEco.txt", delim = "\t")
+# write_delim(CladeEco_wide, "CladeEco.txt", delim = "\t")
 Common %>% filter(Clade =="Int14314_286_309_R_81_56_L_80_97_R_56", Ecotype=="Athaliana") %>% filter(Allele ==1) %>% select(Gene)
 Common
-AthaHV
-#
-
-
-
-
-
-
-
-# ###Output#############
-# a<-EcoTibble %>% select(Clade) %>% distinct()
-# a
-# write_delim(a, path = "HV_table.txt", delim = "\t", na = "NA", append = FALSE, quote_escape = "double")
-# write_delim(Common,path = "Clade_Assignment.txt", delim = "\t", na = "NA", append = FALSE, quote_escape = "double")
-# 
-# HVClades <- Common %>% filter(Ecotype == "Athaliana" & HV ==1 & Allele ==1) %>% group_by(Clade) %>% summarise(n=n())%>% print (n=40)
-# write_delim(HVClades, path = "HV_table.txt", delim = "\t", na = "NA", append = FALSE, quote_escape = "double")
-# 
-# EcoTibble %>% filter(HV==1) %>% arrange(N_Ecotype)
-# Common %>% filter(Gene == "Athaliana_AT1G")
-# 
-# Common %>% filter(Ecotype == "6939" & Allele ==1) %>% arrange(Gene)%>% select(HV) %>% sum()
-# 
-# ###Label iTOL tree with the HV column##########
-# a <- Common %>% filter(Ecotype =="Athaliana" & Allele == 1) %>% arrange(Gene) %>% select(Clade,Gene, HV) %>% distinct() %>%print(n=300)
-# Common                                                                                                  
-# EcoTibble
-# b<-vector()
-# for (a in EcoTibble$Clade){
-# #a <- "1_1925_T036-R1"
-# b <- append(b,Common %>% filter(Allele==1, Clade==a, Ecotype !="Athaliana") %>% distinct(Gene) %>% nrow(),after = length(b))
-# }
-# N <-b
-# EcoTibble<-as_tibble(cbind(EcoTibble,N))
-# EcoTibble %>% filter(HV==1) %>% arrange(N)
-# 
-# Common %>% filter(Gene =="Athaliana_AT1G31540.1")
-# Common
-# levels(as.factor(Common$Clade)) %>% length()
-# CladeList<-as.factor(Common$Clade)
-# for (clade in CladeList){
-# #  print(clade)
-# #  print(Common %>% filter(Clade == clade) %>%select(Gene))  
-#   write_delim(Common %>% filter(Clade == clade) %>%select(Name), path = paste0("~/Box/NLR_binding_site_prediction/analyses/ArabidopsisRENSEQ/Phylogeny/CurrentClades/Full_Gene_Sequences/",clade,".GeneName.txt"), delim = "\t", na = "NA", append = FALSE, quote_escape = "double", col_names =F)
-# }
-# Common %>% filter(HV==1) %>%select(Clade)%>%distinct()
-# write_delim(Common %>% filter(HV==0) %>%select(Clade)%>%distinct(), path = paste0("~/Box/NLR_binding_site_prediction/analyses/ArabidopsisRENSEQ/Phylogeny/CurrentClades/LV_Clade.list"), delim = "\t", na = "NA", append = FALSE, quote_escape = "double", col_names =F)
-# write_delim(Common %>% select(Clade,HV) %>%distinct(), path = "~/Box/NLR_binding_site_prediction/analyses/ArabidopsisRENSEQ/Phylogeny/CurrentClades/HV_map.txt", delim = "\t", na = "NA", append = FALSE, quote_escape = "double", col_names =F)
-# 
-# Number <- Common %>% filter(Ecotype != "Athaliana" & Allele == 1) %>% group_by(Clade) %>% select(Clade,Gene) %>% distinct() %>% summarise(Number=n())
-# Number
-# write_delim(Number, path = "Number.txt", delim = "\t", na = "NA", append = FALSE, quote_escape = "double", col_names =F)
-# 
