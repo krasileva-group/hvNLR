@@ -15,7 +15,7 @@
 ##
 ## Notes: This is a script where variable parameters are set on top including input/output directories. 
 ##        This allows the same script to be used in successive refinements.
-##   
+##        Last tested under R version 3.6.3
 ##
 ## ---------------------------
 ##Installing Packages for alignment manipulation-----------
@@ -38,12 +38,12 @@ library("entropy")
 
 ##########################################
 ### Parameters for first refinement-------
-# 
-# setwd("~/BioInf/Brachy/Protein/RAxML_237aa/Autoclades_70/")
-# MinGapFraction <- 0.9
-# MinGapBlockWidth <- 1
-# hvSiteEntCutoff <-  1.5
-# OutputDirectory <- "../Autoclades_70_Refinement_1/"
+
+setwd("~/BioInf/Brachy/Protein/RAxML_237aa/Autoclades_70/")
+MinGapFraction <- 0.9
+MinGapBlockWidth <- 1
+hvSiteEntCutoff <-  1.5
+OutputDirectory <- "../Autoclades_70_Refinement_1/"
 ##########################################
 
 ##########################################
@@ -78,12 +78,12 @@ library("entropy")
 
 ##########################################
 # ### Parameters for fifth refinement-------
-
-setwd("~/BioInf/Brachy/Protein/RAxML_237aa/Autoclades_70_Refinement_4/")
-MinGapFraction <- 1
-MinGapBlockWidth <- 1
-hvSiteEntCutoff <-  1.5
-OutputDirectory <- "../Autoclades_70_Refinement_5/"
+# 
+# setwd("~/BioInf/Brachy/Protein/RAxML_237aa/Autoclades_70_Refinement_4/")
+# MinGapFraction <- 1
+# MinGapBlockWidth <- 1
+# hvSiteEntCutoff <-  1.5
+# OutputDirectory <- "../Autoclades_70_Refinement_5/"
 ##########################################
 
 if (!dir.exists(OutputDirectory)){dir.create(OutputDirectory)}
@@ -160,7 +160,7 @@ stats<-mutate(stats, Clade = Clade,
               Ali_Length = as.numeric(Ali_Length)
 )
 stats %>% arrange(FractionZeroNG) %>% print(n=500)
-write_delim(stats, path = paste0(OutputDirectory,"/Stats.txt"), delim = "\t", col_names = T)
+# write_delim(stats, path = paste0(OutputDirectory,"/Stats.txt"), delim = "\t", col_names = T)
 stats %>% filter(grepl("Int21623",Clade)) %>% arrange(FractionZeroNG)
 
 ##Plot distributions of invariant sites with/without gaps and of highly variable sites---------
@@ -294,7 +294,7 @@ ggplot(stats %>% filter(Clade %ni% Cut_Nodes_10$Clade), aes(x=FractionZeroNG))+g
 AutoPick<-Cut_Nodes_10 %>% arrange(branch.length)
 
 # ## Import Saved cut list: 
-# Cut_Nodes_10<-read_delim("CutListSplit1_70.txt",delim = " ",col_names = T)
+ Cut_Nodes_10<-read_delim("CutListSplit1_70.txt",delim = " ",col_names = T)
 # Cut_Nodes_10<-read_delim("../Autoclades_70_Refinement_1/CutList_Refinement_1.txt",delim = " ",col_names = T)
 # Cut_Nodes_10<-read_delim("../Autoclades_70_Refinement_2/CutList_Refinement_2.txt",delim = " ",col_names = T)
 # Cut_Nodes_10<-read_delim("../Autoclades_70_Refinement_3/CutList_Refinement_3.txt",delim = " ",col_names = T)
@@ -311,7 +311,7 @@ Cut_Nodes_10
 # write_delim(Cut_Nodes_10, paste0(OutputDirectory,"/CutList_Refinement_1_Int21623.txt"),quote_escape = "double")
 # write_delim(Cut_Nodes_10, paste0(OutputDirectory,"/CutList_Refinement_2_Int21623.txt"),quote_escape = "double")
 # write_delim(Cut_Nodes_10, paste0(OutputDirectory,"/CutList_Refinement_3_Int21623.txt"),quote_escape = "double")
- write_delim(Cut_Nodes_10, paste0(OutputDirectory,"/CutList_Refinement_4_Int21623.txt"),quote_escape = "double")
+# write_delim(Cut_Nodes_10, paste0(OutputDirectory,"/CutList_Refinement_4_Int21623.txt"),quote_escape = "double")
 # 
 ## The trees from raxml are unrooted, therefore the program traverses the trees, choosing the ""biggest"" node to split on
 ## Takes everything behind it as a clade, then takes individual leaves and walks them up to the first Cut_Nodes_10 node
@@ -326,7 +326,7 @@ Cut_Nodes_10
 
 ## Append a column to BigTable that contains the TRUE values for nodes in the cut list.
 Cut_Nodes_10 <- mutate(Cut_Nodes_10, Split_Node_1 = T)
-Cut_Nodes_10 <- Cut_Nodes_10 %>% filter(grepl("Int21623",Clade))
+#Cut_Nodes_10 <- Cut_Nodes_10 %>% filter(grepl("Int21623",Clade))
 BigTable <- Full_table
 BigTable <- left_join(BigTable, Cut_Nodes_10 %>% select(label,node,Clade,Split_Node_1)%>%distinct(), by = c("label","node","Clade"))
 BigTable %>% filter(Split_Node_1)
@@ -354,14 +354,14 @@ for (i in 1:nrow(BigTable)){if (!is.na(BigTable[i,]$label)){                    
 
 as_tibble(Split_1) %>% print(n=3000)
 (BigTable_1 <- mutate(BigTable, Split_1 = as.factor(Split_1)))
-(BigTable_1 <- mutate(BigTable, Split_1 = as.factor(Split_1))%>%filter(grepl("Int21623_417_",Clade)))
+#(BigTable_1 <- mutate(BigTable, Split_1 = as.factor(Split_1))%>%filter(grepl("Int21623_417_",Clade)))
 BigTable_1 %>% print(n=1000)
 ## Count numbers of tips in each new clade
 CladeStat <- BigTable_1 %>% filter(!is.na(Split_1)) %>% group_by(Clade,Split_1) %>% summarise(n=n()) %>% print(n=300)
 CladeStat %>% ungroup() %>% select(Clade) %>% distinct()
 CladeStat %>% ungroup() %>% select(Split_1) %>% distinct()
 BigTable  %>% select(label) %>% distinct()
-write_delim(CladeStat, paste0(OutputDirectory,"/CladeStat.txt"), delim = "\t", append = F, col_names = T)
+# write_delim(CladeStat, paste0(OutputDirectory,"/CladeStat.txt"), delim = "\t", append = F, col_names = T)
 
 ggplot(CladeStat,aes(x=n))+geom_density()
 ggplot(CladeStat,aes(x=n))+geom_density()+xlim(0,100)
@@ -393,10 +393,10 @@ BigTable_1 %>% filter(label %in% Duplicates$label) %>% arrange(label) %>% print(
 BigTable %>% filter(!is.na(Clade)) %>% select(Clade) %>% distinct()
 Duplicates
 
-###Write Clade Lists - DO NOT RUN without repeating refinement
-for (n in 1:(nrow(CladeStat))) {
-  clade <- CladeStat[n,]$Split_1
-  tips <- BigTable_1 %>% filter(Split_1 == clade)
-  tipnames <- tips$label
-  write_delim(x = as.data.frame(tipnames), path = paste0(OutputDirectory,"/",clade, "_",length(tips$label),".txt"), delim = "\t",quote_escape = "double",append = F,col_names = F)
-}
+###Write Clade Lists - DO NOT RUN without repeating refinement-------
+# for (n in 1:(nrow(CladeStat))) {
+#   clade <- CladeStat[n,]$Split_1
+#   tips <- BigTable_1 %>% filter(Split_1 == clade)
+#   tipnames <- tips$label
+#   write_delim(x = as.data.frame(tipnames), path = paste0(OutputDirectory,"/",clade, "_",length(tips$label),".txt"), delim = "\t",quote_escape = "double",append = F,col_names = F)
+# }
