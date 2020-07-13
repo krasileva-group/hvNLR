@@ -23,13 +23,13 @@
 ##   check that each tip is uniquely assigned to a clade
 ##   output lists of genes for each clade
 ## ---------------------------
-
-##Install packages. This needs to be done once for each R version.
-if (!requireNamespace("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
-BiocManager::install("treeio")
-install.packages("tidyverse")
-install.packages("tidytree")
+# sessionInfo()
+## Install packages. This needs to be done once for each R version.
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+#   install.packages("BiocManager")
+# BiocManager::install("treeio")
+# install.packages("tidyverse")
+# install.packages("tidytree")
 
 ###Setup------
 
