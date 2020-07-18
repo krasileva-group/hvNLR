@@ -33,10 +33,10 @@ library("treeio")
 library("tidytree")
 
 '%ni%' <- Negate('%in%')
-setwd("~/BioInf/Brachy/Protein/RAxML_237aa/")
+setwd("~/BioInf/Zenodo/hvNLR/Brachy_NLR_Phylogeny/")
 
 ########Import RAXML tree---------------
-raxml <- read.raxml("./RAxML_bipartitionsBranchLabels.Raxml.out")
+raxml <- read.raxml("RAxML_Brachy_237min/RAxML_bipartitionsBranchLabels.Raxml.out")
 y <- as_tibble(raxml)
 which(!is.na(y$label)) 
 ########Annotate Internal Nodes and save Bootstrap values---------------
@@ -75,7 +75,7 @@ for (m in tree$tip.label){
 }
 good_size_clades <- good_size_clades %>% distinct()
 good_size_clades
-good_size_clades %>% filter(bootstrap <95) %>% arrange(N_tips) %>% print(n=50)
+good_size_clades %>% filter(bootstrap <70) %>% arrange(N_tips) %>% print(n=50) ## 10 poor clades
 
 ##check that the assignment is unique
 a <- good_size_clades$node
@@ -140,8 +140,6 @@ partition %>% arrange(N_tips) %>% print(n=300)
 ggplot(partition, aes(x=N_tips))+geom_histogram(binwidth = 1)
 ggplot(partition, aes(x=N_tips))+geom_histogram(binwidth = 25)
 ggplot(partition, aes(x=bootstrap))+geom_histogram(binwidth = 1)
-
-
 
 ###Export text files for every label in partition40 and populate with properly formated gene id's for automatic retreaval---------
 # for (n in 1:(nrow(partition))) {

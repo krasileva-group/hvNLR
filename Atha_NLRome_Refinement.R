@@ -49,7 +49,7 @@ library("entropy")
 ##########################################
 ### Parameters for first refinement-------
 
-setwd("~/BioInf/ArabidopsisRENSEQ/Phylogeny/Autoclades_70/")
+setwd("~/BioInf/Zenodo/hvNLR/Athaliana_NLR_Phylogeny/Autoclades_70/")
 MinGapFraction <- 0.9
 MinGapBlockWidth <- 1
 hvSiteEntCutoff <-  1.5
@@ -59,7 +59,7 @@ OutputDirectory <- "../Autoclades_70_Refinement_1/"
 ##########################################
 # ### Parameters for second refinement-------
 # 
-# setwd("~/BioInf/ArabidopsisRENSEQ/Phylogeny/Autoclades_70_Refinement_1/")
+# setwd("~/BioInf/Zenodo/hvNLR/Athaliana_NLR_Phylogeny/Autoclades_70_Refinement_1/")
 # MinGapFraction <- 1
 # MinGapBlockWidth <- 1
 # hvSiteEntCutoff <-  1.5
@@ -69,7 +69,7 @@ OutputDirectory <- "../Autoclades_70_Refinement_1/"
 ##########################################
 # ### Parameters for third refinement-------
 # 
-# setwd("~/BioInf/ArabidopsisRENSEQ/Phylogeny/Autoclades_70_Refinement_2/")
+# setwd("~/BioInf/Zenodo/hvNLR/Athaliana_NLR_Phylogeny/Autoclades_70_Refinement_2/")
 # MinGapFraction <- 1
 # MinGapBlockWidth <- 1
 # hvSiteEntCutoff <-  1.5
@@ -79,7 +79,7 @@ OutputDirectory <- "../Autoclades_70_Refinement_1/"
 ##########################################
 # ### Parameters for fourth refinement-------
 # 
-# setwd("~/BioInf/ArabidopsisRENSEQ/Phylogeny/Autoclades_70_Refinement_3/")
+# setwd("~/BioInf/Zenodo/hvNLR/Athaliana_NLR_Phylogeny/Autoclades_70_Refinement_3/")
 # MinGapFraction <- 1
 # MinGapBlockWidth <- 1
 # hvSiteEntCutoff <-  1.5
@@ -143,7 +143,7 @@ for (i in seq_along(files)) {
   EntropyNG[[i]] <- entNG
 }
 
-##Format stats tibble-------
+##Format stats tibble. FractionZero stands for fraction of invariant residues with/without gap charcter-------
 colnames(stats)<-c("Clade","FractionZero","FractionZeroNG","Ali_Length","N_HV_Sites")
 stats<-as_tibble(stats)
 stats
@@ -259,48 +259,52 @@ BigTable <- Full_table
 ## Check that the table is populated correctly
 BigTable %>% filter(!is.na(label)) %>% select(label) %>% distinct() ###Number of genes in the clades under refinement
 
-###Selecting branches in BigTable to cut clades into subclades----------
-curr <- "Int8532_350"
-tr_tbl <- BigTable %>% filter(Clade == curr)
-
-#Cut_Nodes_10 <- BigTable %>% filter(R_Eco >p, L_Eco>p, bootstrap >94)
-a <- BigTable %>% filter(Clade ==curr,node==545) 
-
-###Add branches over 0.5 to the Cut list
-LongBranches <- BigTable %>% filter(branch.length > 0.5)
-Cut_Nodes_10 <- rbind(Cut_Nodes_10,LongBranches)
-
-Cut_Nodes_10 %>% filter(grepl(Clade,pattern = "Int10720_62$")) %>% arrange(-branch.length)
-##To Add to the table
-(a <- BigTable %>% filter(grepl(Clade,pattern = "Int9492_85$"), branch.length >0.3)%>% arrange(-branch.length))
-Cut_Nodes_10 <- rbind(Cut_Nodes_10,a)
-
-##To Remove from the table
-Cut_Nodes_10 <- Cut_Nodes_10 %>% filter(Clade != "Int8392_60")
+### Build a list of branches in BigTable to cut clades into subclades----------
+### This involves inspections of trees in iTOL and adding branches to cut to object Cut_Nodes_10
+### At the end of the block there are commands to import the list of cut nodes that we used at each step
+# curr <- "Int8532_350"
+# tr_tbl <- BigTable %>% filter(Clade == curr)
+# 
+# #Cut_Nodes_10 <- BigTable %>% filter(R_Eco >p, L_Eco>p, bootstrap >94)
+# a <- BigTable %>% filter(Clade ==curr,node==545) 
+# 
+# ###Add branches over 0.5 to the Cut list
+# LongBranches <- BigTable %>% filter(branch.length > 0.5)
+# Cut_Nodes_10 <- rbind(Cut_Nodes_10,LongBranches)
+# 
+# Cut_Nodes_10 %>% filter(grepl(Clade,pattern = "Int10720_62$")) %>% arrange(-branch.length)
+# ##To Add to the table
+# (a <- BigTable %>% filter(grepl(Clade,pattern = "Int9492_85$"), branch.length >0.3)%>% arrange(-branch.length))
+# Cut_Nodes_10 <- rbind(Cut_Nodes_10,a)
+# 
+# ##To Remove from the table
+# Cut_Nodes_10 <- Cut_Nodes_10 %>% filter(Clade != "Int8392_60")
 
 ## Import prior cut list table
-Cut_Nodes_10<-read_delim("../Autoclades_70_Refinement_1/CutList_Refinement_1.txt",delim = " ",col_names = T)
-Cut_Nodes_10<-read_delim("../Autoclades_70/Refined/CutListSplit2_70.txt",delim = " ",col_names = T)
-Cut_Nodes_10<-read_delim("../Autoclades_70/Refined/Refined2/CutListSplit3_70.txt",delim = " ",col_names = T)
+Cut_Nodes_10 <- read_delim("../Autoclades_70_Refinement_1/CutList_Refinement_1.txt",delim = " ",col_names = T)
+#Cut_Nodes_10 <- read_delim("../Autoclades_70_Refinement_2/CutList_Refinement_2.txt",delim = " ",col_names = T)
+#Cut_Nodes_10 <- read_delim("../Autoclades_70_Refinement_3/CutList_Refinement_3.txt",delim = " ",col_names = T)
 Cut_Nodes_10 <- Cut_Nodes_10 %>% mutate(label = as.character(label))
 
 
 Cut_Nodes_10<-left_join(Cut_Nodes_10,Full_table)
-#Cut_Nodes_10<-left_join(SplitClade,Full_table)
-Cut_Nodes_10 %>% arrange(branch.length) %>% print(n=100)
+Cut_Nodes_10 %>% arrange(branch.length) %>% print(n=nrow(Cut_Nodes_10))
 ### Write new cut list table. Do Not Use below without redoing subsequent refinements
 # write_delim(Cut_Nodes_10, paste0(OutputDirectory,"/CutList_Refinement_1.txt"),quote_escape = "double")
 # write_delim(Cut_Nodes_10 ,paste0(OutputDirectory,"/CutList_Refinement_2.txt"),quote_escape = "double")
 # write_delim(Cut_Nodes_10 ,paste0(OutputDirectory,"/CutList_Refinement_3.txt"),quote_escape = "double")
 
+###########################################################
+## Generate New subclade gene lists------------------------
+
 ## The trees from raxml are unrooted, therefore the program traverses the trees, choosing the ""biggest"" node to split on
 ## Takes everything behind it as a clade, then takes individual leaves and walks them up to the first Cut_Nodes_10 node
-## A new column "Split_1" with the name of that node appended to the original Clade name works as new ubclade name.
+## A new column "Split_1" with the name of that node appended to the original Clade name works as new subclade name.
 ## Clade lists can then be exported based on that column. 
 ## Run over all the nodes in Big Table (the concatenated tree collection), and for each tip assign a new Split_1 clade
 ## For non-tip lines, give NA. For tips trees with no nodes in the cut list, give _NS_N to signify lack of further splitting.
 ## For other tips figure out if the current Tip is in the offspring of the Top Clade (one with the most tips)
-## If no, assing the name CurClade_TopClade_L
+## If no, asing the name CurClade_TopClade_L
 ## If yes, find the smallest ancestor in the SplitNodes
 ## Assign the name CurClade_SmallestAncestor_R
 
@@ -311,8 +315,6 @@ BigTable <- Full_table
 BigTable <- left_join(BigTable, Cut_Nodes_10 %>% select(label,node,Clade,Split_Node_1)%>%distinct(), by = c("label","node","Clade"))
 BigTable %>% filter(Split_Node_1)
 Cut_Nodes_10 %>% filter(Split_Node_1)
-
-
 
 ## Generate Split_1 column with new clade assignment for every tip of every tree
 Split_1 <-vector(length = nrow(BigTable))
@@ -342,7 +344,6 @@ BigTable_1 %>% filter(Clade == "Int8532_350", !is.na(Split_1)) %>% group_by(Spli
 BigTable_1 %>% filter(Clade == "Int8532_350", !is.na(Split_1)) %>% group_by(Split_1) %>% summarise(n=n()) %>% select(n) %>% sum()
 BigTable_1 %>% filter(Clade == "Int12040_327_355_R_173", !is.na(Split_1)) %>% group_by(Split_1) %>% summarise(n=n()) %>% print(n=1000)
 BigTable_1 %>% filter(Clade == "Int12040_327_355_R_173", !is.na(Split_1)) %>% group_by(Split_1) %>% summarise(n=n()) %>% select(n) %>% sum()
-
 
 Cut_Nodes_10 %>% filter(Clade == "Int14919_84") %>% print(n=1000)
 stats %>% filter(Clade == "Int13451_126")

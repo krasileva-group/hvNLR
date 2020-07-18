@@ -2,7 +2,7 @@
 ##
 ## Script name: Atha_NLRome_CladeAnalysis.R
 ##
-## Purpose of script: Synthesize info on clade assingnement, ecotypes, alleles, etc. in one "Common" table.
+## Purpose of script: Synthesize info on clade assignment, ecotypes, alleles, etc. in one "Common" table.
 ##
 ## Author: Daniil Prigozhin
 ##
@@ -18,11 +18,13 @@
 ##
 ## ---------------------------
 
-setwd("~/BioInf/ArabidopsisRENSEQ/Phylogeny/Autoclades_70/")
+setwd("~/BioInf/Zenodo/hvNLR/Athaliana_NLR_Phylogeny/Autoclades_70/")
 
 library(tidyverse)
+########################################################################
+### Build a Common table of clade assignments for every NLR ------------
+########################################################################
 
-###IMPORT DATA#################
 '%ni%' <- Negate('%in%')
 (zeroth <-read_delim("./partition_0.list",col_names = c("Clade_0","Gene"), delim = "\t"))
 (first <-read_delim("../Autoclades_70_Refinement_1/partition_1.list",col_names = c("Clade_1","Gene"), delim = "\t"))
@@ -38,11 +40,6 @@ Common<-left_join(Common,second,by = "Gene")
 Common<-left_join(Common,third,by = "Gene")
 Common
 Common<-Common[c(2,1,3,4,5)] ###Rearrange Columns
-
-###ADD Column that creates unique ID's for individual HMM hits#############
-# NBARC<-paste(Common$Gene,Common$Residues,sep = ":")
-# Common<-cbind(Common,NBARC)
-# Common <-as_tibble(Common)
 
 ###FIND Multiple assignments for individual hits###########################
 Common %>% select(Gene) %>% unique()
@@ -67,12 +64,8 @@ Common %>% select(Gene, Clade) %>% unique() %>% group_by(Gene) %>% filter(n()>1)
 Common %>% select(Gene, Clade) %>% unique() 
 Common %>% select(Clade_0, Clade) %>% filter(grepl("Int9878", Clade_0)) %>% unique() %>% arrange(Clade)
 
-
-
 ####Find problem Clades#########
 Common %>% select(Gene, Clade) %>% unique() %>% group_by(Gene) %>% filter(n()>1) %>% ungroup() %>% select(Clade) %>% unique()
-Common %>% filter(Clade == "1_Int8532_350_545_R_17") %>% select(Gene) %>% unique()
-
 
 #####Make a column that contains Ecotype ID only######
 Ecotype<-vector()
@@ -118,6 +111,21 @@ SingletonClades <- Common %>% group_by(Clade) %>% summarise(n=n()) %>% filter(n<
 Common %>% filter(Gene %in% (Common %>% filter(Clade %in% SingletonClades$Clade))$Gene) %>% arrange(Gene)
 ##Currently just 12 singletons. Can make the fusion gene a singleton and rerun the two clades it appears in to simlplify their alignments
 
+#### Create a Pointer table to link individual genes to assemblies. Add column to Common.
+dirs <- dir("..", pattern = "^Autoclades_70.*", full.names = T, recursive = F)
+dirs2 <- dir(path=dirs, pattern = "Int.*",full.names = T)
+files <- list.files(path = dirs2, pattern = "best.fa$",full.names = T)
+files
+(clades <- unlist(strsplit(files, "/"))[4*1:length(files)-1])
+Pointer <- tibble(Clade = clades, File = files)
+Pointer
+Common <- left_join(Common,Pointer, by = "Clade")
+Common %>% filter(is.na(File))%>% select(Clade) %>% unique() #singleton clades
+
+###############################################
+### Look at clade properties ------------------
+###############################################
+
 ###CLADE Sizes####
 Frequency_table <- Common %>% filter(Ecotype != "Athaliana", Allele ==1)%>% group_by(Clade) %>% summarise(n=n()) %>% arrange(n)
 Frequency_table <- Common %>% group_by(Clade) %>% summarise(n=n()) %>% arrange(n)
@@ -128,10 +136,6 @@ Frequency_table %>% select(n) %>% sum() ###sum of 7610 due to filtering for Alle
 ###Currently 237 clades based on the 7818-tip tree
 Frequency_table <- Common %>% group_by(Clade) %>% summarise(n=n()) %>% arrange(n)
 Frequency_table %>% filter(n<20) %>% select(n) %>% sum()
-164+73 ## 73 clades with 50 or more genes responsible for 
-2998+4886 ##under 50 /over 50
-2296+5588 ##under 40 /over 40
-795/7884
 
 ###Clade Characteristics###
 AllClades<-levels(as.factor(Common$Clade))
@@ -158,49 +162,17 @@ EcoTibble$N_Ecotype <- as.numeric(EcoTibble$N_Ecotype)
 EcoTibble$NDupl_Ecotype <- as.numeric(EcoTibble$NDupl_Ecotype)
 EcoTibble
 
-#EcoTibble <- left_join(EcoTibble,Visual, by = "Clade")
 EcoTibble %>% arrange(-NDupl_Ecotype)%>% print(n=200)
 
-
 pd <- position_dodge(width = 1)
-
 ggplot(EcoTibble, aes(x=N_Ecotype, y=NDupl_Ecotype))+geom_point(position = pd)
 
 EcoTibble %>% filter(NDupl_Ecotype >0) %>%arrange(N_Ecotype) %>% print(n=200)
 
-# 
-# ####Finding hv NLRs
-# hvNLR <- Common %>% filter(HV == 1, Ecotype == "Athaliana") %>% print(n=400)
-# hvNLR %>% print(n=300)
-# write_delim(hvNLR, path = "HV_GENES_FullTable.txt", delim = "\t", na = "NA", append = FALSE, quote_escape = "double")
 
-
-###NLR-ID#####
-ID_table <- read_delim("../IntegratedDomains/Ath-NLRome.protein.fa_pfamscan-08-26-2019.1e-3.parsed.verbose.NLR-ID.txt", delim = "\t", col_names = F)
-colnames(ID_table) <- c("Gene","Domains")
-ID_table
-All_Dom_table <- read_delim("../IntegratedDomains/Ath-NLRome.protein.fa_pfamscan-08-26-2019.1e-3.parsed.verbose.NLR.txt", delim = "\t", col_names = F)
-colnames(All_Dom_table) <- c("Gene","Domains")
-All_Dom_table
-cur_gene <-"45050"
-All_Dom_table %>% filter(grepl(cur_gene,Gene)) %>% select(Domains)
-y %>%  filter(grepl(cur_gene,label))
-Common_ID <- left_join(Common,ID_table, by = "Gene")
-Common_ID %>% filter(!is.na(Domains)) %>% group_by(Clade) %>% summarise(n = n()) %>%print(n=300)
-
-
-
-#### Create a Pointer table to link individual genes to assemblies. Add column to Common.
-dirs <- dir("..", pattern = "^Autoclades_70.*", full.names = T, recursive = F)
-dirs2 <- dir(path=dirs, pattern = "Int.*",full.names = T)
-files <- list.files(path = dirs2, pattern = "best.fa$",full.names = T)
-files
-(clades <- unlist(strsplit(files, "/"))[4*1:length(files)-1])
-Pointer <- tibble(Clade = clades, File = files)
-Pointer
-
-Common <- left_join(Common,Pointer, by = "Clade")
-Common %>% filter(is.na(File))%>% select(Clade) %>% unique() #singleton clades
+##################################################
+### Calculate entropy of the clade alignments  ---
+##################################################
 
 ### Now it is possible to create a list of genes with entropy strings 
 ### with positions corresponding to the residues of the gene (i.e. remove gaps at the level of the gene)
@@ -277,48 +249,42 @@ stats<-mutate(stats, Clade = Clade,
               Ali_Length = as.numeric(Ali_Length)
 )
 stats %>% arrange(-N_HV_Sites) %>% print(n=500)
-stats
 
 N_Tips <- Common %>% group_by(Clade)%>%select(Gene)%>%summarise(N=n())
 EcoTibble <- left_join(EcoTibble,N_Tips)
 EcoTibble <- left_join(EcoTibble,stats)
 HV_Clades <- stats %>% filter(N_HV_Sites>9)
 HV_Clades
+Common <- mutate(Common, HV = ifelse(Common$Clade %in% HV_Clades$Clade,1,0))
+Common
+#################################
+### Export common gene table ----
+#################################
+write_delim(Common,path = "../Atha_NLRome_GeneTable.txt",delim = "\t")
 
-
-Common %>% filter(Clade %in% HV_Clades$Clade, Allele == 1)%>%group_by(Ecotype)%>%summarise(n=n())%>% print(n=70)->hvFreq
+### Plot highly variable gene per genotype-----
+hvFreq <- Common %>% filter(Clade %in% HV_Clades$Clade, Allele == 1)%>%group_by(Ecotype)%>%summarise(n=n())%>% print(n=70)
 ggplot(hvFreq,aes(x=n))+geom_histogram()
+
+### 14 of the original 65 clades contain hnNLRs
 Common %>% filter(Clade %in% HV_Clades$Clade, Allele == 1) %>% select(Clade_0) %>% unique() %>% arrange()
+
+## Final clade assignment has 237 clades
 Common %>% select(Clade) %>% unique()
+
+## Export lists of genes of interest-----
 AthaHV<-Common %>% filter(Clade %in% HV_Clades$Clade, Allele == 1,Ecotype == "Athaliana")%>%select(Gene)%>%unique()%>% arrange(Gene)%>%print(n=50)
 # write_delim(AthaHV,"AthaHV.txt", col_names = F, delim = "\t", na = "")
 AthaHVPlus<-Common %>% filter(Clade %in% HV_Clades$Clade, Allele != 1,Ecotype == "Athaliana")%>%select(Gene)%>%unique()%>% arrange(Gene)%>%print(n=50)
 # write_delim(AthaHVPlus,"AthaHVPlus.txt", col_names = F, delim = "\t", na = "")
 
+## Map common names to hvNLRs ----
 CommonNames <- read_delim("AthaKnownGenes.txt",delim = "\t", col_names = c("Gene","CommonName"))
 CommonNames %>% print(n=100)
 AthaHV <- left_join(AthaHV,CommonNames)
+AthaHV %>% distinct() %>% arrange(Gene) %>% print(n=50)
 
-
-AthaHV %>% arrange(Gene) %>% print(n=50)
-Common %>% select("Clade")%>%unique()
-
-Common %>% filter(grepl("AT1G63360.1",Gene))%>%select(Clade)
-HV_Clades
-
-mutate(Common, HV = ifelse(Common$Clade %in% HV_Clades$Clade,1,0)) ->Common
-Common %>% select(Clade,HV) %>% unique() %>% arrange(Clade) %>% write_delim("AllCladesHV.txt",delim = "\t")
-
-
-
-## Would like to look for recent duplications--------
-Common %>% select("Name","Clade","Ecotype") %>% unique() %>% group_by(Clade,Ecotype) %>% summarise(N=n()) ->CladeEco_long
-
-pivot_wider(CladeEco_long,names_from = Ecotype,values_from = N, values_fill = list (N = 0))  %>% ungroup()-> CladeEco_wide
-
-
-ggplot(CladeEco_Ent,aes(x = Ent))+geom_histogram()
-filter(CladeEco_Ent, Ent ==0)
-# write_delim(CladeEco_wide, "CladeEco.txt", delim = "\t")
-Common %>% filter(Clade =="Int14314_286_309_R_81_56_L_80_97_R_56", Ecotype=="Athaliana") %>% filter(Allele ==1) %>% select(Gene)
-Common
+## Export a table of clade representation in every ecotype--------
+CladeEco_long <- Common %>% select("Name","Clade","Ecotype") %>% unique() %>% group_by(Clade,Ecotype) %>% summarise(N=n()) 
+CladeEco_wide <- pivot_wider(CladeEco_long,names_from = Ecotype,values_from = N, values_fill = list (N = 0))  %>% ungroup()
+write_delim(CladeEco_wide, "../CladeEco.txt", delim = "\t")

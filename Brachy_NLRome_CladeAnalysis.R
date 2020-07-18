@@ -18,13 +18,12 @@
 ##
 ## ---------------------------
 
-setwd("~/BioInf/Brachy/Protein/RAxML_237aa/Autoclades_70/")
+setwd("~/BioInf/Zenodo/hvNLR/Brachy_NLR_Phylogeny/Autoclades_70/")
 
 library(tidyverse)
 
 ###IMPORT DATA#################
 '%ni%' <- Negate('%in%')
-
 
 (zeroth <-read_delim("../Autoclades_70/zerothassignment.txt",col_names = c("Clade_0","Gene"), delim = "\t"))
 (first <-read_delim("../Autoclades_70_Refinement_1/firstassignment.txt",col_names = c("Clade_1","Gene"), delim = "\t"))
@@ -71,7 +70,7 @@ Common %>% select(Gene, Clade) %>% unique()
 Common %>% select(Gene, Clade) %>% unique() %>% group_by(Gene) %>% filter(n()>1) %>% ungroup() %>% select(Clade) %>% unique()
 
 #####Make a column that contains Ecotype ID only######
-Annotation<-read_csv("../../NLR_Map.csv", col_names = c("Name","Assembly"))
+Annotation<-read_csv("../NLR_Map.csv", col_names = c("Name","Assembly"))
 (Annotation<-mutate(Annotation, Gene = toupper(Name)))
 Common <- left_join(Common, Annotation, by = "Gene")
 
@@ -128,21 +127,6 @@ EcoTibble
 ggplot(EcoTibble %>% filter(N_HV_Sites<100), aes(x=N_Ecotype, y=NDupl_Ecotype,color = N_HV_Sites))+geom_point(position = pd)+ylim(-1,30)
 
 EcoTibble %>% filter(NDupl_Ecotype >0) %>%arrange(N_Ecotype) %>% print(n=200)
-
-###NLR-ID#####
-ID_table <- read_delim("~/Box/NLR_binding_site_prediction/analyses/Brachy/NLR-ID/Bdistachyon_all.NLR-ID.txt", delim = "\t", col_names = F)
-colnames(ID_table) <- c("Name","Domains_ID")
-ID_table
-All_Dom_table <- read_delim("~/Box/NLR_binding_site_prediction/analyses/Brachy/NLR-ID/Bdistachyon_all.NLR.txt", delim = "\t", col_names = F)
-colnames(All_Dom_table) <- c("Name","Domains")
-RPW8_NLR <- All_Dom_table %>% filter(grepl("RPW8", Domains)) %>% select(Name) %>% mutate(Status = 1)
-write_tsv(RPW8_NLR,"RPW8_NLR.list",col_names = F)
-
-Common_ID <- left_join(Common,ID_table, by = "Name")
-Common_ID %>% filter(!is.na(Domains_ID)) %>% group_by(Clade) %>% summarise(n = n()) %>%print(n=300)
-Common_AD <- left_join(Common,All_Dom_table, by = "Name")
-Common_AD %>% filter(!is.na(Domains)) %>% group_by(Clade) %>% summarise(n = n()) %>%print(n=300)
-Common_AD %>% filter(is.na(Domains)) ### There are 27 proteins in my tree that likely got filtered out by KVK
 
 #### Create a Pointer table to link individual genes to assemblies. Add column to Common.
 dirs <- dir("..", pattern = "^Autoclades_70.*", full.names = T, recursive = F)
@@ -238,6 +222,10 @@ N_Tips <- Common %>% group_by(Clade)%>%select(Gene)%>%summarise(N=n())
 EcoTibble <- left_join(EcoTibble,N_Tips)
 EcoTibble <- left_join(EcoTibble,stats)
 HV_Clades <- stats %>% filter(N_HV_Sites>=10)
+Common <- Common %>% mutate(HV = ifelse(Clade %in% HV_Clades$Clade,1,0))
+getwd()
+write_delim(Common,"../Brachy_NLRome_GeneTable.txt", delim = "\t")
+
 Common %>% filter(Clade %in% HV_Clades$Clade)%>%group_by(Assembly)%>%summarise(n=n())%>% print(n=60)
 Common %>% filter(Clade %in% HV_Clades$Clade, Assembly == "v2.1") %>% select(Gene,Clade) %>% unique() %>% print(n=200)
 Common %>% filter(Clade %in% HV_Clades$Clade, Assembly == "v2.1") %>% group_by(Clade) %>% summarise(N=n()) %>% print(n=200)

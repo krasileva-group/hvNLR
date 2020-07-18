@@ -39,7 +39,7 @@ library("entropy")
 ##########################################
 ### Parameters for first refinement-------
 
-setwd("~/BioInf/Brachy/Protein/RAxML_237aa/Autoclades_70/")
+setwd("~/BioInf/Zenodo/hvNLR/Brachy_NLR_Phylogeny/Autoclades_70/")
 MinGapFraction <- 0.9
 MinGapBlockWidth <- 1
 hvSiteEntCutoff <-  1.5
@@ -49,7 +49,7 @@ OutputDirectory <- "../Autoclades_70_Refinement_1/"
 ##########################################
 ### Parameters for second refinement-------
 # 
-# setwd("~/BioInf/Brachy/Protein/RAxML_237aa/Autoclades_70_Refinement_1/")
+# setwd("~/BioInf/Zenodo/hvNLR/Brachy_NLR_Phylogeny/Autoclades_70_Refinement_1/")
 # MinGapFraction <- 1
 # MinGapBlockWidth <- 1
 # hvSiteEntCutoff <-  1.5
@@ -59,7 +59,7 @@ OutputDirectory <- "../Autoclades_70_Refinement_1/"
 ##########################################
 # ### Parameters for third refinement-------
 # 
-# setwd("~/BioInf/Brachy/Protein/RAxML_237aa/Autoclades_70_Refinement_2/")
+# setwd("~/BioInf/Zenodo/hvNLR/Brachy_NLR_Phylogeny/Autoclades_70_Refinement_2/")
 # MinGapFraction <- 1
 # MinGapBlockWidth <- 1
 # hvSiteEntCutoff <-  1.5
@@ -69,7 +69,7 @@ OutputDirectory <- "../Autoclades_70_Refinement_1/"
 ##########################################
 # # ### Parameters for fourth refinement-------
 # 
-# setwd("~/BioInf/Brachy/Protein/RAxML_237aa/Autoclades_70_Refinement_3/")
+# setwd("~/BioInf/Zenodo/hvNLR/Brachy_NLR_Phylogeny/Autoclades_70_Refinement_3/")
 # MinGapFraction <- 1
 # MinGapBlockWidth <- 1
 # hvSiteEntCutoff <-  1.5
@@ -79,7 +79,7 @@ OutputDirectory <- "../Autoclades_70_Refinement_1/"
 ##########################################
 # ### Parameters for fifth refinement-------
 # 
-# setwd("~/BioInf/Brachy/Protein/RAxML_237aa/Autoclades_70_Refinement_4/")
+# setwd("~/BioInf/Zenodo/hvNLR/Brachy_NLR_Phylogeny/Autoclades_70_Refinement_4/")
 # MinGapFraction <- 1
 # MinGapBlockWidth <- 1
 # hvSiteEntCutoff <-  1.5
@@ -175,7 +175,7 @@ DoNotSplit <- stats %>% filter(FractionZeroNG > 0.9) %>% arrange(Clade) %>% prin
 
 ToiTol <- stats %>% filter(FractionZeroNG < 0.9) %>% arrange(N_HV_Sites) %>% print(n=nrow(stats))
 ToiTol <- mutate(ToiTol, path = paste0(Clade,"/","RAxML_bipartitionsBranchLabels.",Clade,".First.out"))
-write_delim(ToiTol %>% select(path),"To_iTol.list",col_names = F, delim = " ")
+# write_delim(ToiTol %>% select(path),"To_iTol.list",col_names = F, delim = " ")
 ToiTol %>% filter(grepl("Int21623",Clade))%>%select(Clade)
 ##Plot Entropy figures for all Clades, save in ./Plots/----------------------
 ## Set plot hight in bits
@@ -214,9 +214,8 @@ for (l in seq_along(Entropy)){
 ###Import trees, calculate tree statistics, store all trees in BigTable object
 '%ni%' <- Negate('%in%')
 trees <- list.files(path = dirs,pattern = "RAxML_bipartitionsBranchLabels.*.First.out$", recursive = F, full.names = TRUE)
-Annotation<-read_csv("../../NLR_Map.csv", col_names = c("Name","Assembly"))
+Annotation<-read_csv("../NLR_Map.csv", col_names = c("Name","Assembly"))
 (Annotation<-mutate(Annotation, label = toupper(Name)))
-
 
 BigTable<-vector("list",length = length(trees))
 for (i in seq_along(trees)){
@@ -270,28 +269,30 @@ BigTable
 ggplot(BigTable,aes(x=branch.length))+geom_histogram()+ylim(-1,201)
 BigTable %>% filter(Name == "Bradi2g39247.1.p")
 
-p<-10
-Cuts_Available<-BigTable %>% filter(N_OverlapEco>p, bootstrap >98) %>% group_by(Clade) %>%summarise(n=n()) %>%print(n=65)
-
-ggplot(BigTable, aes(x=branch.length))+geom_histogram()#+xlim(0.1,1)#+ylim(-1,100)
-a <- BigTable %>% filter(branch.length >0.3) %>% print(n=200) ##These branches are too long
-BigTable %>% filter(Clade == "Int15864_478_741_L_325")
-("Int15864_478_741_L_325" %in% Full_table$Clade)
-(a <- BigTable %>% filter(grepl("_417_.*_48",Clade)) %>% arrange(-branch.length) %>% filter(branch.length >0.03,bootstrap>90,N_OverlapEco>11))
-BigTable %>% filter(grepl("_417_.*_48",Clade),bootstrap>90) %>% arrange(-branch.length) %>% arrange(-N_OverlapEco)
-Cut_Nodes_10 <- vector()
-Cut_Nodes_10 <- unique(rbind(Cut_Nodes_10,a)) %>% print(n=100)
-#Cut_Nodes_10 <- Cut_Nodes_10 %>% select(-Split_Node_1)
-
-# a <- BigTable %>% filter(branch.length >0.1, branch.length <= 0.3, bootstrap >98) %>% arrange(N_OverlapEco) %>% print(n=200) ##These branches are too long
-# a %>% select(Clade) %>% unique() %>% print(n=100)
-
-Cut_Nodes_10 %>% select(node,branch.length,label,bootstrap,Clade,Name,N_OverlapEco)%>% print(n=300)
-ggplot(stats %>% filter(Clade %ni% Cut_Nodes_10$Clade), aes(x=FractionZeroNG))+geom_histogram()
-
-
-
-AutoPick<-Cut_Nodes_10 %>% arrange(branch.length)
+#######################################################
+## Create a list of branches to cut in the trees-------
+#######################################################
+## To recreate original analysis, import cut lists below the quoted out section
+# p<-10
+# Cuts_Available<-BigTable %>% filter(N_OverlapEco>p, bootstrap >98) %>% group_by(Clade) %>%summarise(n=n()) %>%print(n=65)
+# 
+# ggplot(BigTable, aes(x=branch.length))+geom_histogram()#+xlim(0.1,1)#+ylim(-1,100)
+# a <- BigTable %>% filter(branch.length >0.3) %>% print(n=200) ##These branches are too long
+# BigTable %>% filter(Clade == "Int15864_478_741_L_325")
+# ("Int15864_478_741_L_325" %in% Full_table$Clade)
+# (a <- BigTable %>% filter(grepl("_417_.*_48",Clade)) %>% arrange(-branch.length) %>% filter(branch.length >0.03,bootstrap>90,N_OverlapEco>11))
+# BigTable %>% filter(grepl("_417_.*_48",Clade),bootstrap>90) %>% arrange(-branch.length) %>% arrange(-N_OverlapEco)
+# Cut_Nodes_10 <- vector()
+# Cut_Nodes_10 <- unique(rbind(Cut_Nodes_10,a)) %>% print(n=100)
+# #Cut_Nodes_10 <- Cut_Nodes_10 %>% select(-Split_Node_1)
+# 
+# # a <- BigTable %>% filter(branch.length >0.1, branch.length <= 0.3, bootstrap >98) %>% arrange(N_OverlapEco) %>% print(n=200) ##These branches are too long
+# # a %>% select(Clade) %>% unique() %>% print(n=100)
+# 
+# Cut_Nodes_10 %>% select(node,branch.length,label,bootstrap,Clade,Name,N_OverlapEco)%>% print(n=300)
+# ggplot(stats %>% filter(Clade %ni% Cut_Nodes_10$Clade), aes(x=FractionZeroNG))+geom_histogram()
+# 
+# AutoPick<-Cut_Nodes_10 %>% arrange(branch.length)
 
 # ## Import Saved cut list: 
  Cut_Nodes_10<-read_delim("CutListSplit1_70.txt",delim = " ",col_names = T)
@@ -299,8 +300,6 @@ AutoPick<-Cut_Nodes_10 %>% arrange(branch.length)
 # Cut_Nodes_10<-read_delim("../Autoclades_70_Refinement_2/CutList_Refinement_2.txt",delim = " ",col_names = T)
 # Cut_Nodes_10<-read_delim("../Autoclades_70_Refinement_3/CutList_Refinement_3.txt",delim = " ",col_names = T)
 # Cut_Nodes_10 <- read_delim(paste0(OutputDirectory,"/CutList_Refinement_4_Int21623.txt"),delim = ' ')
-
-
 Cut_Nodes_10
 
 ### Write new cut list table. Do Not Use below without redoing subsequent refinements
@@ -400,3 +399,4 @@ Duplicates
 #   tipnames <- tips$label
 #   write_delim(x = as.data.frame(tipnames), path = paste0(OutputDirectory,"/",clade, "_",length(tips$label),".txt"), delim = "\t",quote_escape = "double",append = F,col_names = F)
 # }
+

@@ -26,7 +26,7 @@
 ## ---------------------------
 # sessionInfo()
 
-## Install packages. This needs to be done once for each R version.
+## Install packages. This needs to be done once for each R installation.
 # if (!requireNamespace("BiocManager", quietly = TRUE))
 #   install.packages("BiocManager")
 # BiocManager::install("treeio")
@@ -40,7 +40,7 @@ library("treeio")
 library("tidytree")
 
 '%ni%' <- Negate('%in%')
-setwd("~/BioInf/ArabidopsisRENSEQ/Phylogeny/")
+setwd("~/BioInf/Zenodo/hvNLR/Athaliana_NLR_Phylogeny/")
 
 ###Import RAXML tree---------------
 raxml <- read.raxml("./RAxML_NLRome_237min/RAxML_bipartitionsBranchLabels.Raxml.out")
@@ -100,7 +100,7 @@ for (ii in seq_along(tree$tip.label)){
 G_S_C <-vector()
 for (jj in seq_along(good_size_clades)){G_S_C <- rbind(G_S_C,good_size_clades[[jj]])}
 good_size_clades <- distinct(as_tibble(G_S_C))
-good_size_clades %>% filter(bootstrap <70) %>% arrange(N_tips) %>% print(n=50)
+good_size_clades %>% filter(bootstrap <70) %>% arrange(N_tips) %>% print(n=50) #12 clades with low support
 
 ##Collect offspring nodes
 offs_pool<-vector()
@@ -129,6 +129,7 @@ for (n in missing$node){
 compl <- unique(compl)
 compl ### 8 additional small clades are enough to cover all sequences
 
+### Add the small clades to the partition
 partition <-rbind(partition,compl)
 
 ##check that the assignment is unique
@@ -140,7 +141,7 @@ offs_pool <- unique(offs_pool)
 partition ###Current partition
 x[a[which(a %ni% offs_pool)],] ###Partition checked for nesting clades
 partition <- x[a[which(a %ni% offs_pool)],]
-partition %>% select(N_tips) %>% sum() ###Check is all tips are there (7818)
+partition %>% select(N_tips) %>% sum() ###Check if all tips are there (7818)
 partition %>% arrange(bootstrap) %>% print(n=300)
 
 ###Find missing tips
@@ -156,13 +157,13 @@ ggplot(partition, aes(x=bootstrap))+geom_histogram(binwidth = 1)
 
 ########################################################
 ###Export partition--------
-# write_delim(partition,"Partition.tsv", delim = ";")
+# write_delim(partition,"Partition.tsv", delim = "\t")
 
 ###Export node annotation for iTol------
 # annotation <- partition %>%select(label,bootstrap) %>% mutate(position = 0.5, color = "rgb(0, 0, 0)"	,style = "normal", size = 	2	)
 # write_tsv(annotation, "Node_annotation.txt",col_names = F)
 
-# ###Export text files for every label in partition40 and populate with properly formated gene id's for automatic retreaval---------
+# ###Export text files for every label in partition40 and populate with properly formatted gene id's for automatic retreaval---------
 # for (n in 1:(nrow(partition))) {
 #   clade <- partition[n,]$label
 #   node <- partition[n,]$node
