@@ -20,7 +20,7 @@
 
   
 #Set Working Directory-----------------------------------
-setwd(dir = "~/BioInf/ArabidopsisRENSEQ/Phylogeny/Autoclades_70/")
+setwd(dir = "~/BioInf/Zenodo/hvNLR/Analysis/")
 # 
 # #Installing Packages for alignment manipulation-----------
 # install.packages("entropy")
@@ -34,8 +34,9 @@ setwd(dir = "~/BioInf/ArabidopsisRENSEQ/Phylogeny/Autoclades_70/")
 #Loading libraries-----------------------------------------
 library(msa)
 library(entropy)
-library(odseq)
+#library(odseq)
 library(tidyverse)
+'%ni%' <- Negate("%in%")
 
 #Get list of genes to produce Entropy plots for-------
 getwd()
@@ -44,11 +45,14 @@ genes %>% print(n=200)
 
 
 #Get the associated clades and alignment files from Atha_NLRome_CladeAnalysis.R output i.e. the main tibble called Common-----
+Common <- read_delim("../Athaliana_NLR_Phylogeny/Atha_NLRome_GeneTable.txt",delim = "\t")
 (CladesFiles<- Common %>% filter(Gene %in% genes$Gene))
+
+## Change the relative path to work from current directory
+CladesFiles <- CladesFiles %>% mutate(File = str_replace(File,'../','../Athaliana_NLR_Phylogeny/'))
+CladesFiles %>% select(File)
 left_join(genes,CladesFiles) %>% arrange(Clade) %>% select(Gene,CommonName,Clade) %>% print(n=40)
                                                                                             
-
-
 #Loop that imports alignments one at a time and appends dataframe with columns of entropy values--------
 Alph_21 <- c("A","R","N","D","C","Q","E","G","H","I","L","K","M","F","P","S","T","W","Y","V","-")
 Alph_20 <- c("A","R","N","D","C","Q","E","G","H","I","L","K","M","F","P","S","T","W","Y","V")
@@ -95,8 +99,8 @@ for (j in seq_along(genes$Gene)) {
   entNG <- apply(Tidy_CM_NoGaps, 1, entropy,unit="log2") %>% as_tibble()
   colnames(entNG)<-paste0("EntropyNoGaps_",gene)
   entNG
-  
-  OutputDirectory <- paste0("GeneAnalysisHVPlus/",gene,"_",CN,"/")
+  if (!dir.exists("Test")){dir.create("Test")}
+  OutputDirectory <- paste0("Test/",gene,"_",CN,"/")
   if (!dir.exists(OutputDirectory)){dir.create(OutputDirectory)}
   
   #Output entropy results to file-------------------------------------
@@ -138,7 +142,6 @@ for (j in seq_along(genes$Gene)) {
 
 ##Import LRR Annotation
 LRR_Annotation <- read_delim(file = "GeneAnalysisHV/SnapGene/All_features.tsv", col_names = F,delim = "\t")
-# LRR_Annotation <- read_delim(file = "~/Box/NLR_binding_site_prediction/figures/Figure_4/ZAR1.FeatureList.txt", col_names = F,delim = "\t")
 colnames(LRR_Annotation) <- c("Gene", "Motiff", "Start", "Stop", "Length")
 LRR_Annotation %>% filter(Motiff == "NB-ARC")
 LRR_Annotation %>% print(n=600)
@@ -159,14 +162,14 @@ max(LRR_Annotation$RepNum, na.rm = T) # the greatest number of repeats is 26
 (genes<-read_delim("AthaHV.txt",col_names = c("Gene","CommonName"),delim = "\t" ))
 (genes %>% unique() -> genes)
 (missing <- filter(genes, Gene %ni% LRR_Annotation$Gene))
-(CladesFiles<- Common %>% filter(Gene %in% genes$Gene))
 (CladesFiles<- Common %>% filter(Gene %in% LRR_Annotation$Gene))
+CladesFiles <- CladesFiles %>% mutate(File = str_replace(File,'../','../Athaliana_NLR_Phylogeny/'))
+
 
 #Loop that imports alignments one at a time and appends dataframe with columns of entropy values--------
 Alph_21 <- c("A","R","N","D","C","Q","E","G","H","I","L","K","M","F","P","S","T","W","Y","V","-")
 Alph_20 <- c("A","R","N","D","C","Q","E","G","H","I","L","K","M","F","P","S","T","W","Y","V")
 Hydrophob <- c("A","I","L","M","F","P","W","Y","V")
-# genes <- tibble(Gene = "Athaliana_AT3G50950.1", CommonName = "ZAR1")
 
 All_LRR_Entropy <- vector("list", length = nrow(genes))
 All_LRR_Hydrophob <-vector("list", length = nrow(genes))
@@ -240,6 +243,7 @@ for (j in seq_along(genes$Gene)) {
   ### Collect statistics on where the high entropy residues are
 
 }
+
 AAlist<-vector()
 for(jj in seq_along(All_LRR_Hydrophob)){AAlist<-rbind(AAlist,All_LRR_AA[[jj]])}
 colnames(AAlist) <- c("Gene","LRR","Start","Pm5","Pm4","Pm3","Pm2","Pm1","P1","P2","P3","P4","P5","P6","P7","P8","P9","P10","P11","P12","P13")
@@ -255,8 +259,80 @@ for(jj in seq_along(All_LRR_Entropy)){Entropy<-rbind(Entropy,All_LRR_Entropy[[jj
 colnames(Entropy) <- c("Gene","LRR","Start","Pm5","Pm4","Pm3","Pm2","Pm1","P1","P2","P3","P4","P5","P6","P7","P8","P9","P10","P11","P12","P13")
 Entropy
 
-#######################################
-## Export resulting tables------------
-# write_delim(Entropy,"Entropy_LRR.txt",delim = "\t")
-# write_delim(Hphob,"Hphob_LRR.txt",delim = "\t")
-# write_delim(AAlist,"ZAR1.AAlist.txt",delim = "\t")
+#################################################################
+## Export resulting tables for Figure S1 and Figure 3 -----------
+#################################################################
+ write_delim(Entropy,"LRR_Entropy.txt",delim = "\t")
+ write_delim(Hphob,"LRR_Hphob.txt",delim = "\t")
+ write_delim(AAlist,"LRR_AAlist.txt",delim = "\t")
+
+ 
+#################################################################
+### Table 1. Report Residues over cutoff per NLR domain ---------
+#################################################################
+ Domains <- read_delim("Atha_hvNLR_Domains.txt",delim = "\t")
+ ## Now we have the domains defined in a way that cannot miss any index for an hv residue.
+ ## How do we get counts of hv residues per domain?
+ Domain_HVs<-vector()
+ genes %>% print(n=50)
+ for (j in seq_along(genes$Gene)) {
+   #Reading in sequence alignment-----------------------------
+   gene <- genes$Gene[[j]]
+   CN <- genes$CommonName[[j]]
+   file <- (CladesFiles %>% filter(Gene == gene))$File
+   file
+   (maa <- readAAMultipleAlignment(file))
+   
+   #Masking columns by reference gene----------------
+   RefGene <- gene
+   (RefSeq <- as(maa, "AAStringSet")[grep(pattern = gene, x=rownames(maa))])
+   AliLen <- width(RefSeq)
+   GapMask<- NULL
+   for (i in 1:AliLen){
+     c<-as.vector(RefSeq[[1]][i]) %in% c("-")
+     GapMask<-append(GapMask,c,length(GapMask))
+   }
+   
+   colmask(maa) <- IRanges(GapMask)
+   (RefSeqNG <- as(maa, "AAStringSet")[grep(pattern = gene, x=rownames(maa))])
+   #Masking reference genes---------------------------
+   (RefIDs <- grep(pattern = "Athaliana", x=names(unmasked(maa))))
+   rowmask(maa) <- IRanges(start = RefIDs, end = RefIDs)
+   
+   #Retrieving the non-masked subset------------------
+   RefAli <- as(maa, "AAStringSet")
+   RefLen <- width(RefAli[1])
+   
+   
+   ## Calculating Consensus Matrix-----------------
+   (Tidy_CM<-as_tibble(t(consensusMatrix(RefAli, baseOnly = T))))
+   ## Compensating for consensus matrix not keeping full alphabet in output
+   for (a in setdiff(Alph_21,colnames(Tidy_CM))){
+     vec <- as_tibble(0*(1:nrow(Tidy_CM)))
+     colnames(vec) <- paste(a)
+     Tidy_CM <- as_tibble(cbind(Tidy_CM,vec))
+   }
+   ##Selecting relevant columns
+   (Tidy_CM_NoGaps <- select(Tidy_CM,Alph_20))
+   (Tidy_CM_Hydrophob <- select(Tidy_CM_NoGaps, Hydrophob))
+   ##Entropy Calculation Ignoring Gaps-----------
+   entNG <- apply(Tidy_CM_NoGaps, 1, entropy,unit="log2") %>% as_tibble()
+   colnames(entNG)<-paste0("EntropyNoGaps_",gene)
+   entNG
+   (hvCoords<-which(entNG>=1.5))
+   domainCoords <- Domains %>% filter(Gene == gene)
+   domainCoords <- mutate(domainCoords, nHV = 0)
+   for (ii in seq_along(domainCoords$Gene)){
+     start <- domainCoords$Start[[ii]]
+     stop <- domainCoords$Stop[[ii]]
+     domainCoords$nHV[[ii]] <- sum((hvCoords>=start)*(hvCoords<=stop))
+   }
+   Domain_HVs<-rbind(Domain_HVs,domainCoords)
+ }
+ 
+ Domain_HVs_wide<- Domain_HVs %>% select(Gene,Motiff,nHV) %>% pivot_wider(names_from = Motiff,values_from = nHV)
+ Domain_HVs_wide %>% arrange(Gene) %>% print(n=40)
+ Domain_HVs <- left_join(genes,Domain_HVs_wide) 
+ Domain_HVs <- Domain_HVs %>% mutate(Gene = str_remove(Gene,"Athaliana_"))
+ write_delim(Domain_HVs,"Atha_Domain_HVs.txt",delim = "\t",na = '') 
+ 
