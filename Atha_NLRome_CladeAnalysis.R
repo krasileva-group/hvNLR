@@ -288,3 +288,31 @@ AthaHV %>% distinct() %>% arrange(Gene) %>% print(n=50)
 CladeEco_long <- Common %>% select("Name","Clade","Ecotype") %>% unique() %>% group_by(Clade,Ecotype) %>% summarise(N=n()) 
 CladeEco_wide <- pivot_wider(CladeEco_long,names_from = Ecotype,values_from = N, values_fill = list (N = 0))  %>% ungroup()
 write_delim(CladeEco_wide, "../CladeEco.txt", delim = "\t")
+
+
+
+##############################################################
+### Produce HV Comparator Tables of clades that have hvNLR ---
+##############################################################
+
+Common %>% filter(HV==1)%>%select(Clade_0) %>% distinct()->HV_Clades
+HV_Tables <- vector(length = nrow(HV_Clades),mode  = "list")
+for (ii in seq_along(HV_Clades$Clade_0)){
+  clade <- HV_Clades$Clade_0[[ii]]
+  
+  HV_Tables[[ii]] <- Common %>% filter(Clade_0 == clade, Allele==1, Ecotype == "Athaliana")%>% select(Gene, Clade_0, Clade, HV, CommonName)
+  
+}
+HV_Table <- HV_Tables[[1]]
+for (jj in 2:length(HV_Tables)){
+  HV_Table <- rbind(HV_Table,HV_Tables[[jj]])
+}
+HV_Table
+getwd()
+write_delim(HV_Table,"HV_Comparators.tsv", delim = t, col_names = FALSE,na = '', quote_escape = "double")
+Common %>% left_join(genes) -> Common
+Common %>% filter(Gene =="Athaliana_AT3G50950.1") %>% select (Clade_1)
+
+
+
+Common %>% filter(HV==1, Ecotype == "Athaliana") %>% arrange(Gene) %>% select(Gene) %>% print(n=40) 
