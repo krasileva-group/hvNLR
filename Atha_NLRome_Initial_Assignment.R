@@ -156,12 +156,9 @@ ggplot(partition, aes(x=N_tips))+geom_histogram(binwidth = 25)
 ggplot(partition, aes(x=bootstrap))+geom_histogram(binwidth = 1)
 
 ########################################################
-###Export partition--------
+###Export partition, gene lists for initial clades -----
+########################################################
 # write_delim(partition,"Partition.tsv", delim = "\t")
-
-###Export node annotation for iTol------
-# annotation <- partition %>%select(label,bootstrap) %>% mutate(position = 0.5, color = "rgb(0, 0, 0)"	,style = "normal", size = 	2	)
-# write_tsv(annotation, "Node_annotation.txt",col_names = F)
 
 # ###Export text files for every label in partition40 and populate with properly formatted gene id's for automatic retreaval---------
 # for (n in 1:(nrow(partition))) {
@@ -171,4 +168,74 @@ ggplot(partition, aes(x=bootstrap))+geom_histogram(binwidth = 1)
 #   tipnames <- unlist(strsplit(tips$label,"/",fixed = T))[2*1:nrow(tips)-1]
 #   write_delim(x = as.data.frame(tipnames), path = paste0("./Autoclades_70/",clade, "_",length(tips$label),".txt"), delim = "\t",quote_escape = "double",append = F,col_names = F)
 # }
-# 
+
+########################################################
+###Export annotations for iTOL------
+########################################################
+# annotation <- partition %>%select(label,bootstrap) %>% mutate(position = 0.5, color = "rgb(0, 0, 0)"	,style = "normal", size = 	2	)
+# write_tsv(annotation, "Node_annotation.txt",col_names = F)
+
+### Initial Clades as Color Strips
+# At this point nodes have names, which should simplify things
+
+colourCount = length(partition$label)
+library(RColorBrewer)
+getPalette = colorRampPalette(brewer.pal(9, "Set1"))
+partition %>% select(label) %>% mutate(color = sample(getPalette(colourCount)), Annotation = label) ->export
+
+sink("test_colorstrip.txt",append = F)
+cat(
+"DATASET_COLORSTRIP
+SEPARATOR SPACE
+DATASET_LABEL InitialClades
+COLOR #ff0000
+COLOR_BRANCHES 1
+BORDER_WIDTH 1
+BORDER_COLOR #0000ff
+DATA
+")
+for (ii in 1:length(export$label)){
+  cat(export[ii,] %>% unlist())
+  cat("\n")
+}
+sink()
+getwd()
+
+## Reference genes as text labels
+Names <- read_delim("Autoclades_70/AthaKnownGenes.txt", delim = "\t", col_names = c("ID","Name"))
+Names %>% print(n=100)
+x %>% mutate(ID = str_remove(label,"/.*$")) %>% left_join(Names) %>% filter(!is.na(Name))%>%
+  select(label,Name)->export_names
+
+sink("test_genelabels.txt",append = F)
+cat(
+  "DATASET_TEXT
+SEPARATOR SPACE
+DATASET_LABEL NamedGenes
+COLOR #ff0000
+DATA
+")
+for (ii in 1:length(export_names$label)){
+  cat(export_names[ii,] %>% unlist())
+  cat(" 1 #000000 bold-italic 1\n")
+}
+sink()
+
+sink("test_cutbranch.txt", append = F)
+cat("DATASET_SYMBOL
+SEPARATOR SPACE
+
+#label is used in the legend table (can be changed later)
+DATASET_LABEL CutNodes
+
+#dataset color (can be changed later)
+COLOR #ffff00
+MAXIMUM_SIZE 10
+DATA
+")
+for (ii in 1:length(export$label)){
+  cat(export[ii,1] %>% unlist())
+  cat(" 3 10 #ff0000 1 0.5\n")
+}
+sink()
+
