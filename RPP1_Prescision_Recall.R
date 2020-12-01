@@ -58,7 +58,8 @@ RPP1_res %>% ggplot(aes(x=Entropy, y= 1/ATR_Dist))+geom_point()
 
 RPP1_res %>% filter(Entropy > 1.5) %>% ggplot(aes(x=ATR_Dist))+geom_histogram()
 
-dist_cut = 4
+
+dist_cut = 6
 Entropy <- 0+1:30*.1
 
 get_recall <- function(x){
