@@ -20,11 +20,14 @@
 ## load packages
 
 require(tidyverse)
-BiocManager::install("GenomicRanges")
+#BiocManager::install("GenomicRanges")
 library(GenomicRanges)
 ## set working directory
 
+
 setwd("~/BioInf/ArabidopsisRENSEQ/Proximity/")
+setwd("~/Dropbox/Shared_Files/Daniil_William_Share/")
+
 
 data <- read_delim("ImmuneGenes.bed", delim = "\t", col_names = c('chr','start','end','strand','id'))
 gr <- GRanges(seqnames = data$chr,ranges = IRanges(data$start,data$end),strand = data$strand, id = data$id)
