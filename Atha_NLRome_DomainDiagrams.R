@@ -37,6 +37,16 @@ write_delim(domains,delim = "\t", col_names = TRUE, path = "Atha_NLRome_Domains.
 domains %>% filter(!is.na(Dom)) ->domains
 domains %>% group_by(Dom) %>% summarise(n=n()) %>% arrange (n) %>% print(n=300)
 domains %>% group_by(Dom,Gene) %>% summarise(n=n()) %>% arrange (n) %>% filter (n>1, !grepl("LRR", Dom), Dom != "NB-ARC", Dom != "TIR") %>% print(n=300)
+domains %>% mutate(Length = 1+Stop-Start) %>% filter(Length <100) %>% group_by(Dom) %>% summarise(n=n()) %>% arrange(-n)%>% print(n=300)
+domains %>% mutate(Length = 1+Stop-Start) %>% filter(Dom == "TelA", Eval < 1E-5) %>% arrange(Eval)
+
+domains %>% mutate(Length = 1+Stop-Start) %>% filter( Eval < 1E-5) %>% group_by(Dom) %>% summarise(n=n())%>%arrange(-n)%>% print(n=300)
+
+import <- read_delim("ID_domains.tsv", delim = '\t', col_names = c("Gene","Start","Stop","Envsta","Envsto","hmmacc","Dom","type","hmmst","hmmend","hmmlength","bit","Eval","sig","clan"))
+domains <- import %>% select(Gene,Dom,Start,Stop,Eval)
+
+
+
 
 ### iTOL export----
 # need to assign a color and a shape to every domain
@@ -143,12 +153,16 @@ all_color_doms %>% filter(grepl(x = Gene,pattern = "AT"))
 
 setwd("~/Downloads/Atha_NLRome_Domains/")  
 genreg <- read_csv("Leaves.txt", col_names = "GeneRegion")
-genreg %>% mutate(Gene = str_remove(GeneRegion,"\\/.*$")) ->genreg
-left_join(genreg,all_color_doms) %>% mutate(Gene = GeneRegion) %>% select(-GeneRegion) ->genreg
+genreg <- read_csv("Needed_diagrams.txt", col_names = "GeneRegion")
 
-export<-all_color_doms
-export<-genreg
-sink("genreg_domains.txt", append = F)
+
+
+genreg %>% mutate(Gene = str_remove(GeneRegion,"\\/.*$")%>% str_replace_all(" ","_")) ->genreg
+left_join(genreg,all_color_doms) %>% mutate(Gene = GeneRegion) %>% select(-GeneRegion) ->genreg
+genreg <- genreg %>%mutate(Gene = str_replace_all(Gene," ","_"))
+#export<-all_color_doms
+export<-genreg #%>% filter(Eval <1E-5)
+sink("ID_genreg_domains.txt", append = F)
 cat(
 "DATASET_DOMAINS
 SEPARATOR COMMA
@@ -167,3 +181,4 @@ for (gene in levels(as.factor(export$Gene))){
   cat("\n")
 }
 sink()
+getwd()

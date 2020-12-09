@@ -1,10 +1,37 @@
+## ---------------------------
+##
+## Script name: 
+##
+## Purpose of script:
+##
+## Author: Daniil Prigozhin
+##
+## Date Created: 2020-12-07
+##
+## Copyright (c) Daniil Prigozhin, 2020
+## Email: daniilprigozhin@lbl.gov
+##
+## ---------------------------
+##
+## Notes:
+##   
+##
+## ---------------------------
+## load packages
+
 library(tidyverse)
+#install.packages("bio3d", dependencies=TRUE)
+library(bio3d)
+
 
 setwd("~/Box/NLR_binding_site_prediction/figures/Figure_RPP1/WSB_Entropy")
 
 
-## Import data from Chimera printouts
-distances <- read_delim("RR_distances.tsv",col_names = F, comment = '#', delim = "\t")
+## Import data
+pdb <- read.pdb("minimal.pdb")
+dm_minimal <- dm(pdb,ncore = 4, mask.lower = F)
+distances <- dm_minimal
+
 names <- read_delim("currentres.txt", col_names = F, delim  = "\t")
 colnames(distances) <- names
 nrow(distances)
@@ -22,9 +49,10 @@ names %>% filter(Protein =="ATR1") %>% print(n=1000)
 names %>% mutate(Index = 1:nrow(names))-> names
 
 
+## For each RPP1 residue, calculate shortest atom to atom distance
+
 RPP1_res <- names %>% filter(Protein =="RPP1")
 RPP1_res %>% print(n=1000)
-
 
 find_min_dist <- function(x){
   return(min(distances[x,774:1010]))
@@ -35,21 +63,8 @@ RPP1_res %>% filter(ATR_Dist < 5) %>% print(n=100)
 RPP1_res %>% ggplot(aes(x=Residue, y=1/ATR_Dist))+geom_point()
 RPP1_res %>% ggplot(aes(x=1/ATR_Dist))+geom_histogram()
 1/.2
-## Conclusion - these are not inter-atomic distances. i guess these are centroid or some such
 
-install.packages("bio3d", dependencies=TRUE)
-library(bio3d)
-pdb <- read.pdb("../RPP1-ATR1-Final.pdb")
-pdb <- read.pdb("minimal.pdb")
-?dist.xyz
-?dm
-dm_minimal <- dm(pdb,ncore = 8, mask.lower = F)
-dm_minimal
-filled.contour(dm_minimal, nlevels = 10)
-dm_minimal[1:773,3]
-distances <- dm_minimal
-?dm
-
+## Compare with precomputed entropy scores to test predictive power of the method
 
 entropy <- read_delim("6981_T283-R1_.ChimeraEntropy.txt",delim = "\t",skip = 3, col_names = c("Empty","Res","Entropy"))
 entropy %>% mutate(Residue = as.integer(str_remove(Res,":")))%>%select(Residue,Entropy) -> entropy
@@ -85,10 +100,14 @@ Table <- tibble(Entropy = Entropy)
 Table %>% mutate(Recall = lapply(Entropy, get_recall)%>%unlist, Precision = lapply(Entropy, get_precision)%>%unlist) -> Table
 Table <- Table %>% filter(Entropy <=2.3)
 Table %>% ggplot(aes(x= Precision, y= Recall, color = Entropy))+geom_point()
-Table %>% ggplot(aes(x= -Entropy, y= Recall, color = Precision))+geom_point()
+Table %>% ggplot(aes(x= Entropy, y= Recall, color = Precision))+geom_point()
 Table %>% ggplot(aes(x= Entropy, y= Precision, color = Recall))+geom_point()
 
 Table %>% filter(Entropy>.6, Entropy <1.9) %>% ggplot(aes(x= Precision, y= Recall, label = Entropy))+
-  geom_point()+geom_text(hjust = 0, nudge_x = 0.005)+ labs(title = "Precision vs Recall at shown Entropy cutoffs")
+  geom_point()+geom_text(hjust = 0, nudge_x = 0.005)+ labs(title = "Precision vs Recall at shown Entropy cutoffs")+
+  xlim(0,1)+ylim(0,1)+theme_classic()
 
 Table %>% print(n=100)
+Table %>% gather(2:3, )
+TL <- gather(Table, type, fraction, Recall:Precision, factor_key=TRUE)
+TL %>% ggplot(aes(x=Entropy, y=fraction, color = type))+geom_point()+ theme_classic()+ theme(legend.title = element_blank(), axis.title.y = element_blank())
