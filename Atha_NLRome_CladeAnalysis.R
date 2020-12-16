@@ -257,6 +257,9 @@ HV_Clades <- stats %>% filter(N_HV_Sites>9)
 HV_Clades
 Common <- mutate(Common, HV = ifelse(Common$Clade %in% HV_Clades$Clade,1,0))
 Common
+
+ggplot(stats, aes(x=N_HV_Sites))+geom_histogram(binwidth = 5)
+ggsave("~/Desktop/histogram.pdf")
 #################################
 ### Export common gene table ----
 #################################

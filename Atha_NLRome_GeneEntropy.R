@@ -335,6 +335,10 @@ Entropy
    }
    Domain_HVs<-rbind(Domain_HVs,domainCoords)
  }
+ Percent_HV <- Domain_HVs %>% mutate(Percent = round(100*nHV/Length,1))
+ Percent_HV_wide <- Percent_HV %>% select(Gene,Motiff,Percent) %>% pivot_wider(names_from = Motiff,values_from = Percent)
+ Percent_HV_wide %>% print(n=100)
+ write_delim(Percent_HV_wide,"~/Desktop/Atha_Domain_number.txt",delim = "\t",na = '', col_names = T) 
  
  Domain_HVs_wide <- Domain_HVs %>% select(Gene,Motiff,nHV) %>% pivot_wider(names_from = Motiff,values_from = nHV)
  Domain_HVs_wide %>% arrange(Gene) %>% print(n=40)
