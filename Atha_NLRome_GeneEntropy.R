@@ -141,7 +141,7 @@ for (j in seq_along(genes$Gene)) {
 }
 
 ##Import LRR Annotation
-LRR_Annotation <- read_delim(file = "GeneAnalysisHV/SnapGene/All_features.tsv", col_names = F,delim = "\t")
+LRR_Annotation <- read_delim(file = "/Users/prigozhin/BioInf/ArabidopsisRENSEQ/Phylogeny/Autoclades_70/GeneAnalysisHV/SnapGene/All_features.tsv", col_names = F,delim = "\t")
 colnames(LRR_Annotation) <- c("Gene", "Motiff", "Start", "Stop", "Length")
 LRR_Annotation %>% filter(Motiff == "NB-ARC")
 LRR_Annotation %>% print(n=600)
@@ -270,11 +270,13 @@ Entropy
 #################################################################
 ### Table 1. Report Residues over cutoff per NLR domain ---------
 #################################################################
- Domains <- read_delim("Atha_hvNLR_Domains.txt",delim = "\t")
+ getwd()
+ Domains <- read_delim("/Users/prigozhin/BioInf/Zenodo/hvNLR/Analysis/Atha_hvNLR_Domains.txt",delim = "\t")
  ## Now we have the domains defined in a way that cannot miss any index for an hv residue.
  ## How do we get counts of hv residues per domain?
  Domain_HVs<-vector()
  genes %>% print(n=50)
+ j <- 1
  for (j in seq_along(genes$Gene)) {
    #Reading in sequence alignment-----------------------------
    gene <- genes$Gene[[j]]
@@ -320,19 +322,30 @@ Entropy
    colnames(entNG)<-paste0("EntropyNoGaps_",gene)
    entNG
    (hvCoords<-which(entNG>=1.5))
+   
    domainCoords <- Domains %>% filter(Gene == gene)
-   domainCoords <- mutate(domainCoords, nHV = 0)
+   domainCoords <- mutate(domainCoords, nHV = 0, hvRes = NA)
+   
    for (ii in seq_along(domainCoords$Gene)){
      start <- domainCoords$Start[[ii]]
      stop <- domainCoords$Stop[[ii]]
      domainCoords$nHV[[ii]] <- sum((hvCoords>=start)*(hvCoords<=stop))
+     a <- hvCoords[which(hvCoords <stop & hvCoords>start)]
+     domainCoords$hvRes[[ii]] <- toString(a)
    }
    Domain_HVs<-rbind(Domain_HVs,domainCoords)
  }
+ Percent_HV <- Domain_HVs %>% mutate(Percent = round(100*nHV/Length,1))
+ Percent_HV_wide <- Percent_HV %>% select(Gene,Motiff,Percent) %>% pivot_wider(names_from = Motiff,values_from = Percent)
+ Percent_HV_wide %>% print(n=100)
+ write_delim(Percent_HV_wide,"~/Desktop/Atha_Domain_number.txt",delim = "\t",na = '', col_names = T) 
  
- Domain_HVs_wide<- Domain_HVs %>% select(Gene,Motiff,nHV) %>% pivot_wider(names_from = Motiff,values_from = nHV)
+ Domain_HVs_wide <- Domain_HVs %>% select(Gene,Motiff,nHV) %>% pivot_wider(names_from = Motiff,values_from = nHV)
  Domain_HVs_wide %>% arrange(Gene) %>% print(n=40)
- Domain_HVs <- left_join(genes,Domain_HVs_wide) 
+ Domain_HVs <- left_join(genes,Domain_Res_wide) 
  Domain_HVs <- Domain_HVs %>% mutate(Gene = str_remove(Gene,"Athaliana_"))
- write_delim(Domain_HVs,"Atha_Domain_HVs.txt",delim = "\t",na = '') 
+ write_delim(Domain_HVs,"Atha_Domain_Res.txt",delim = "\t",na = '') 
+ getwd()
+ Domain_Res_wide <- Domain_HVs %>% select(Gene,Motiff,hvRes) %>% pivot_wider(names_from = Motiff,values_from = hvRes)
+ 
  
